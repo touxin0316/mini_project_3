@@ -97,7 +97,7 @@ Point state_value()
             return cur;
         }
     }
-    return {0,0};
+    //return {0,0};
 }
 
 
