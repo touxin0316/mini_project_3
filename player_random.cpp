@@ -15,6 +15,19 @@ const int SIZE = 8;
 std::array<std::array<int, SIZE>, SIZE> board;
 std::vector<Point> next_valid_spots;
 
+//位置的權重
+const int weight[8][8] =
+{
+    65, -3, 6, 4, 4, 6, -3, 65,
+    -3, -29, 3, 1, 1, 3, -29, -3,
+    6, 3, 5, 3, 3, 5, 3, 6,
+    4, 1, 3, 1, 1, 3, 1, 4,
+    4, 1, 3, 1, 1, 6, 1, 4,
+    6, 3, 5, 3, 5, 5, 3, 6,
+    -3, -29, 3, 1, 1, 3, -29, -3,
+    65, -3, 6, 4, 4, 6, -3, 65,
+};
+
 void read_board(std::ifstream& fin)
 {
     fin >> player;
@@ -39,67 +52,54 @@ void read_valid_spots(std::ifstream& fin)
     }
 }
 
-Point state_value()
+/////現在棋盤落子位置的權重
+
+int state_value(int index)
 {
-    int n_valid_spots = next_valid_spots.size();
-    for(int i=0;i<n_valid_spots;i++)
-    {
-        Point cur = next_valid_spots[i];
-        //cout << board[2][3] << endl;
-        if(board[cur.x][cur.y + 1] == 1 && board[cur.x - 1][cur.y - 1] == 2 && board[cur.x][cur.y + 2] == 2)//左 上跟右
-        {
-            //board[cur.x][cur.y] = 2;
-            //board[cur.x + 1][cur.y] = 2;
-            return cur;
-        }
-        else if(board[cur.x][cur.y + 1] == 1 && board[cur.x - 1][cur.y - 1] == 2 && board[cur.x + 1][cur.y + 1] == 2)//左 上跟下
-        {
-            return cur;
-        }
-        else if(board[cur.x][cur.y + 1] == 1 && board[cur.x + 1][cur.y + 1] == 2 && board[cur.x][cur.y + 2] == 2)//左 右跟下
-        {
-            return cur;
-        }
-        else if(board[cur.x + 1][cur.y] == 1 && board[cur.x + 1][cur.y - 1] == 2 && board[cur.x + 1][cur.y + 1] == 2)//上 左跟右
-        {
-            return cur;
-        }
-        else if(board[cur.x + 1][cur.y] == 1 && board[cur.x + 2][cur.y] == 2 && board[cur.x + 1][cur.y + 1] == 2)//上 下跟右
-        {
-            return cur;
-        }
-        else if(board[cur.x + 1][cur.y] == 1 && board[cur.x + 2][cur.y] == 2 && board[cur.x + 1][cur.y - 1] == 2)//上 下跟左
-        {
-            return cur;
-        }
-        else if(board[cur.x][cur.y - 1] == 1 && board[cur.x - 1][cur.y - 1] == 2 && board[cur.x][cur.y - 2] == 2)//右 上跟左
-        {
-            return cur;
-        }
-        else if(board[cur.x][cur.y - 1] == 1 && board[cur.x - 1][cur.y - 1] == 2 && board[cur.x + 1][cur.y - 1] == 2)//右 上跟下
-        {
-            return cur;
-        }
-        else if(board[cur.x][cur.y - 1] == 1 && board[cur.x + 1][cur.y - 1] == 2 && board[cur.x][cur.y - 2] == 2)//右 下跟左
-        {
-            return cur;
-        }
-        else if(board[cur.x - 1][cur.y] == 1 && board[cur.x + 1][cur.y + 1] == 2 && board[cur.x + 2][cur.y] == 2)//下 左跟上
-        {
-            return cur;
-        }
-        else if(board[cur.x - 1][cur.y] == 1 && board[cur.x - 1][cur.y - 1] == 2 && board[cur.x - 1][cur.y + 1] == 2)//下 左跟右
-        {
-            return cur;
-        }
-        else if(board[cur.x - 1][cur.y] == 1 && board[cur.x - 1][cur.y + 1] == 2 && board[cur.x + 2][cur.y] == 2)//下 右跟上
-        {
-            return cur;
-        }
-    }
-    //return {0,0};
+    int x = next_valid_spots[index].x;
+    int y = next_valid_spots[index].y;
+    int score = wieght[x][y];
+    return score;
 }
 
+Point maxtree(int Index)
+{
+    int t = next_valid_spots.size();
+    int score[t];
+    //int array[t+1];
+    //array[0] = 0;
+    int max = -99;
+    int max_index = 0;
+    for(int i=0;i<t;i++)
+    {
+        score[i] = state_value[i - 1];
+
+        //int j = 0;
+        /*while(array[j] != 0)//traverse 下去
+        {
+            if(score[i] > array[j]) // 如果是>現在這個節點，就往右邊放
+            {
+                j = j * 2 + 1;//右邊
+            }
+            else if(score[i] < array[j]) // 如果是<現在這個節點就往左邊放
+            {
+                j *= 2; // 左邊
+            }
+            else if(score[i] == array[j]) // 如果值一樣的話就不插入
+            {
+                return;
+            }
+        }
+        array[j] = score[i];*/
+        if(score[i] > max)
+        {
+            max = score[i];
+            max_index = i;
+        }
+    }
+
+    return next_valid_spots[max_index];
+}
 
 void write_valid_spot(std::ofstream& fout)
 {
