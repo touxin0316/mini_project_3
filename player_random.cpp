@@ -13,9 +13,11 @@ struct Point
 int player;
 const int SIZE = 8;
 std::array<std::array<int, SIZE>, SIZE> board;
+std::array<std::array<int, SIZE>, SIZE> boardstate;
 std::vector<Point> next_valid_spots;
 
 //位置的權重
+/*
 const int weight[8][8] =
 {
     65, -3, 6, 4, 4, 6, -3, 65,
@@ -27,6 +29,10 @@ const int weight[8][8] =
     -3, -29, 3, 1, 1, 3, -29, -3,
     65, -3, 6, 4, 4, 6, -3, 65,
 };
+*/
+
+const int dx[] = {1,-1,0,0,1,-1,1,-1};
+const int dy[] = {0,0,1,-1,1,-1,-1,1};
 
 void read_board(std::ifstream& fin)
 {
@@ -52,64 +58,231 @@ void read_valid_spots(std::ifstream& fin)
     }
 }
 
-/////現在棋盤落子位置的權重
-
-int state_value(int index)
+void resetboard()
 {
-    int x = next_valid_spots[index].x;
-    int y = next_valid_spots[index].y;
-    int score = wieght[x][y];
+    for (int i = 0; i < SIZE; i++)
+    {
+        for (int j = 0; j < SIZE; j++)
+        {
+            boardstate[i][j] = board[i][j];
+        }
+    }
+}
+
+int flipnumber(int x, int y, int player)
+{
+    int flip[8] = {};
+    int flipmax = 0;
+    for(int i=0;i<8;i++)
+    {
+        int newx = x + dx[i];
+        int newy = y + dy[i];
+        while(boardstate[newx][newy] == 3 - player)
+        {
+            if(boardstate[newx + dx[i]][newy + dy[i]] == player)
+            {
+                flip[i] += 1;
+                boardstate[newx][newy] = player;
+                break;
+            }
+            else if(boardstate[newx + dx[i]][newy + dy[i]] == 3 - player)
+            {
+                flip[i] += 1;
+                boardstate[newx][newy] = player;
+                newx += dx[i];
+                newy += dy[i];
+            }
+            else
+            {
+                flip[i] = 0;
+                break;
+            }
+        }
+    }
+    for(int i=0;i<8;i++)
+    {
+        flipmax += flip[i];
+    }
+    //cout << flipmax << endl;
+    return flipmax;
+}
+
+
+int state_value(int x, int y, int player)
+{
+    int score = 0;
+    int distance = 0;
+    if((x == 7 && y == 7) || (x == 0 && y == 0) || (x == 7 && y == 0) || (x == 0 || y == 7))
+    {
+        score = 65;
+    }
+    else
+    {
+        distance = abs(x - 3) + abs(y - 3);
+        if(distance >= 4)
+            score = -29;
+        else
+            score = distance;
+    }
+    score += flipnumber(x,y,player);
     return score;
 }
 
-Point maxtree(int Index)
+bool isvalid(int x, int y, int player)
+{
+    bool lastvalid = false;
+    int flip[8] = {};
+    int flipmax = 0;
+    if(board[x][y] == 0)
+    {
+        for(int i=0;i<8;i++)
+        {
+            int newx = x + dx[i];
+            int newy = y + dy[i];
+            while(board[newx][newy] == 3 - player)
+            {
+                if(board[newx + dx[i]][newy + dy[i]] == player)
+                {
+                    flip[i] += 1;
+                    break;
+                }
+                else if(board[newx + dx[i]][newy + dy[i]] ==  3 - player)
+                {
+                    newx += dx[i];
+                    newy += dy[i];
+                    flip[i] += 1;
+                }
+                else
+                {
+                    flip[i] = 0;
+                    break;
+                }
+            }
+        }
+        for(int i=0;i<8;i++)
+        {
+            flipmax += flip[i];
+        }
+    }
+
+    if(flipmax > 0)
+        lastvalid = true;
+    //if(lastvalid)
+        //cout << x << " " << y << endl;
+    return lastvalid;
+}
+/*
+Point minmaxtree()
 {
     int t = next_valid_spots.size();
     int score[t];
-    //int array[t+1];
-    //array[0] = 0;
     int max = -99;
     int max_index = 0;
     for(int i=0;i<t;i++)
     {
-        score[i] = state_value[i - 1];
-
-        //int j = 0;
-        /*while(array[j] != 0)//traverse 下去
+        int x = next_valid_spots[i].x;
+        int y = next_valid_spots[i].y;
+        score[i] = state_value(x,y,player);
+        board[x][y] = player;
+        int newmax = -99;
+        for(int j=0;j<8;j++)
         {
-            if(score[i] > array[j]) // 如果是>現在這個節點，就往右邊放
+            for(int k=0;k<8;k++)
             {
-                j = j * 2 + 1;//右邊
-            }
-            else if(score[i] < array[j]) // 如果是<現在這個節點就往左邊放
-            {
-                j *= 2; // 左邊
-            }
-            else if(score[i] == array[j]) // 如果值一樣的話就不插入
-            {
-                return;
+                int newscore = 0;
+                if(isvalid(j, k))
+                    newscore = state_value(j, k, 3 - player);
+                else
+                    continue;
+                if(newscore > newmax)
+                    newmax = newscore;
             }
         }
-        array[j] = score[i];*/
-        if(score[i] > max)
+        if(score[i] - newmax > max)
         {
-            max = score[i];
+            max = score[i] - newmax;
             max_index = i;
         }
+        board[x][y] = 0;
+    }
+    //cout << max << endl;
+    return next_valid_spots[max_index];
+}
+*/
+int minimax(int depth ,int x, int y, bool ismax, int player)
+{
+    //boardstate[x][y] = player;
+    if(depth == 0)
+    {
+        return state_value(x, y, player);
     }
 
-    return next_valid_spots[max_index];
+    if(ismax)
+    {
+        int maxval = -99;
+        for(int i=0;i<8;i++)
+        {
+            for(int j=0;j<8;j++)
+            {
+                if(isvalid(i,j, player))
+                {
+                    boardstate[i][j] = player;
+                    int eval = minimax(depth - 1, i, j, false, 3 - player);
+                    maxval = std::max(maxval,eval);
+                    boardstate[i][j] = 0;
+                    //cout << maxval << endl;
+                }
+            }
+        }
+        boardstate[x][y] = 0;
+        return maxval;
+    }
+    else
+    {
+        int minval = 99;
+        for(int i=0;i<8;i++)
+        {
+            for(int j=0;j<8;j++)
+            {
+                if(isvalid(i,j,3 - player))
+                {
+                    boardstate[i][j] = 3 - player;
+                    int eval = minimax(depth - 1, i, j, true, player);
+                    minval = std::min(minval,eval);
+                    boardstate[i][j] = 0;
+                }
+            }
+        }
+        boardstate[x][y] = 0;
+        return minval;
+    }
 }
 
 void write_valid_spot(std::ofstream& fout)
 {
     int n_valid_spots = next_valid_spots.size();
     srand(time(NULL));
-    // Choose random spot. (Not random uniform here)
-    //int index = (rand() % n_valid_spots);
-    //Point p = next_valid_spots[index];
-    // Remember to flush the output to ensure the last action is written to file.
-    Point p = state_value();
+    resetboard();
+    int t = next_valid_spots.size();
+    int score[t];
+    int max = -99;
+    int max_index = 0;
+    for(int i=0;i<t;i++)
+    {
+        int x = next_valid_spots[i].x;
+        int y = next_valid_spots[i].y;
+        boardstate[x][y] = player;
+        score[i] = minimax(2,x,y,true,player);
+        //cout << score[i] << endl;
+        if(score[i] > max)
+        {
+            max = score[i];
+            max_index = i;
+        }
+        //printboard();
+        resetboard();
+    }
+    Point p = next_valid_spots[max_index];
     fout << p.x << " " << p.y << std::endl;
     fout.flush();
 }
