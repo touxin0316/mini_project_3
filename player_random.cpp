@@ -119,7 +119,7 @@ int state_value(int x, int y, int player)
     else
     {
         distance = abs(x - 3) + abs(y - 3);
-        if(distance >= 4)
+        if((x == 7 && y == 6) || (x == 6 && y == 7) || (x == 1 && y == 0) || (x == 0 && y == 1) || (x == 7 && y == 1) || (x == 6 && y == 0) || (x == 1 || y == 7) || (x == 0 || y == 6))
             score = -29;
         else
             score = distance;
@@ -209,11 +209,13 @@ Point minmaxtree()
     return next_valid_spots[max_index];
 }
 */
+
 int minimax(int depth ,int x, int y, bool ismax, int player)
 {
-    //boardstate[x][y] = player;
+
     if(depth == 0)
     {
+        boardstate[x][y] = player;
         return state_value(x, y, player);
     }
 
@@ -226,10 +228,18 @@ int minimax(int depth ,int x, int y, bool ismax, int player)
             {
                 if(isvalid(i,j, player))
                 {
+
+                    std::array<std::array<int, SIZE>, SIZE> boardtemp;
+                    for(int i=0;i<8;i++)
+                        for(int j=0;j<8;j++)
+                            boardtemp[i][j] = boardstate[i][j];
                     boardstate[i][j] = player;
-                    int eval = minimax(depth - 1, i, j, false, 3 - player);
+                    int a = flipnumber(i,j,player);
+                    int eval = minimax(depth - 1, i, j, false,3 - player);
                     maxval = std::max(maxval,eval);
-                    boardstate[i][j] = 0;
+                    for(int i=0;i<8;i++)
+                        for(int j=0;j<8;j++)
+                            boardstate[i][j] = boardtemp[i][j];
                     //cout << maxval << endl;
                 }
             }
@@ -244,12 +254,19 @@ int minimax(int depth ,int x, int y, bool ismax, int player)
         {
             for(int j=0;j<8;j++)
             {
-                if(isvalid(i,j,3 - player))
+                if(isvalid(i,j,player))
                 {
+                    std::array<std::array<int, SIZE>, SIZE> boardtemp;
+                    for(int i=0;i<8;i++)
+                        for(int j=0;j<8;j++)
+                            boardtemp[i][j] = boardstate[i][j];
                     boardstate[i][j] = 3 - player;
+                    int a = flipnumber(i,j,3 - player);
                     int eval = minimax(depth - 1, i, j, true, player);
                     minval = std::min(minval,eval);
-                    boardstate[i][j] = 0;
+                    for(int i=0;i<8;i++)
+                        for(int j=0;j<8;j++)
+                            boardstate[i][j] = boardtemp[i][j];
                 }
             }
         }
@@ -265,7 +282,7 @@ void write_valid_spot(std::ofstream& fout)
     resetboard();
     int t = next_valid_spots.size();
     int score[t];
-    int max = -99;
+    int maxval = -99;
     int max_index = 0;
     for(int i=0;i<t;i++)
     {
@@ -274,9 +291,9 @@ void write_valid_spot(std::ofstream& fout)
         boardstate[x][y] = player;
         score[i] = minimax(2,x,y,true,player);
         //cout << score[i] << endl;
-        if(score[i] > max)
+        if(score[i] > maxval)
         {
-            max = score[i];
+            maxval = score[i];
             max_index = i;
         }
         //printboard();
